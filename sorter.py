@@ -18,8 +18,8 @@ create a file with a standard name (phone_numbers_list.txt) containing a list of
 
 read the list of phone numbers from the numbers.txt file and save it sorted to the sorted.txt file:
     --sort numbers.txt sorted.txt
-read the list of phone numbers from the numbers.txt file and save it
-sorted to the file with a standard name (sorted_phone_numbers_list.txt):
+read the list of phone numbers from the numbers.txt file and save it sorted to the file with a
+standard name (sorted_phone_numbers_list.txt):
     --sort numbers.txt
 """
 
@@ -103,9 +103,10 @@ class ChunksMerger:
 
 def main():
     input_file_name = 'phone_numbers_list.txt'
-    output_file_name = 'sorted_phone_numbers_list.txt'
     chunk_file_name_format = input_file_name + "_tmp_{0}"
-    chunk_size = 3 * 1024 * 1024  # megabyte
+    output_file_name = 'sorted_phone_numbers_list.txt'
+    chunk_size = 5 * 1024 * 1024  # megabyte
+    min_buffer_size = 1000
     time_print = True
     cleanup = True
 
@@ -114,12 +115,14 @@ def main():
         return 0
 
     if len(sys.argv) > 4 or len(sys.argv) < 3 or sys.argv[1] not in ['--create', '--sort']:
-        print("invalid arguments\n", HELP)
+        print("invalid arguments\n")
+        print(HELP)
         return 1
 
     if sys.argv[1] == '--create':
         if not sys.argv[2].isnumeric():
-            print("invalid arguments\n", HELP)
+            print("invalid arguments\n")
+            print(HELP)
             return 1
         n = int(sys.argv[2])
         if len(sys.argv) == 4:
@@ -136,11 +139,11 @@ def main():
         start = time.time()
         cs = ChunkSorter(input_file_name, chunk_file_name_format)
         cs.split_file_to_chunks(chunk_size)
-        buffer_size = chunk_size // cs.number_of_chunks
+        buffer_size = max(min_buffer_size, chunk_size // cs.number_of_chunks)
         ChunksMerger(cs.chunk_filenames_list, cs.number_of_chunks, buffer_size, output_file_name).merge()
         end = time.time()
         if time_print:
-            print(f"sorting time:: {end - start:.3f} s")
+            print(f"sorting time: {end - start:.3f} s")
         if cleanup:
             for file in cs.chunk_filenames_list:
                 os.remove(file)

@@ -1,6 +1,6 @@
 # Description
-1. Creation of a file containing a list of N phone numbers (+79XXXXXXXXX)
-2. Reading the list of phone numbers from a file and saving the sorted list to another file
+1. Creation of a file containing N phone numbers (+79XXXXXXXXX)
+2. Reading the list of phone numbers from a file and saving it sorted to another file
 
 # Usage
 Create a file numbers.txt containing a list of N phone numbers:

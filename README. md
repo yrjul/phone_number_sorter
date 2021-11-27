@@ -1,8 +1,8 @@
-# Description
+## Description
 1. creation of a file containing a list of N phone numbers (+79XXXXXXXXX)
 2. reading the list of phone numbers from a file and saving the sorted list to another file
 
-# Using
+## Using
 create a file numbers.txt containing a list of N phone numbers:
     --create N numbers.txt
 create a file with a standard name (phone_numbers_list.txt) containing a list of N phone numbers

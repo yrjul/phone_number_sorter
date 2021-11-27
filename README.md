@@ -7,7 +7,7 @@ Create a file numbers.txt containing a list of N phone numbers:
 
 > --create N numbers.txt
 
-Create a file with a standard name (phone_numbers_list.txt) containing a list of N phone numbers
+Create a file with a standard name (phone_numbers_list.txt) containing a list of N phone numbers:
 
 > --create N
 

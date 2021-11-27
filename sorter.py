@@ -13,7 +13,7 @@ import time
 
 HELP = """create a file numbers.txt containing a list of N phone numbers:
     --create N numbers.txt
-create a file with a standard name (phone_numbers_list.txt) containing a list of N phone numbers 
+create a file with a standard name (phone_numbers_list.txt) containing a list of N phone numbers:
     --create N
 
 read the list of phone numbers from the numbers.txt file and save it sorted to the sorted.txt file:

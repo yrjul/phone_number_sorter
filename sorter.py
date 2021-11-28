@@ -30,15 +30,16 @@ def create_file_with_numbers(file_name, n):
             file.write("+79" + str(randint(0, 999999999)).zfill(9) + '\n')
 
 
-class ChunkSorter:
-    def __init__(self, file_name, chunk_file_name_format):
-        self.file_name = file_name
+class PhoneNumberSorter:
+    def __init__(self, input_file_name, output_file_name, chunk_file_name_format):
+        self.input_file_name = input_file_name
+        self.output_file_name = output_file_name
         self.chunk_file_name_format = chunk_file_name_format
-        self.chunk_filenames_list = []
+        self.chunk_file_names_list = []
         self.number_of_chunks = 0
 
     def split_file_to_chunks(self, number_of_lines_in_chunk):
-        file = open(self.file_name, 'r')
+        file = open(self.input_file_name)
         while True:
             lines = file.readlines(number_of_lines_in_chunk)
             if not lines:
@@ -47,10 +48,10 @@ class ChunkSorter:
             for line in lines:
                 numbers_list.append(line[3:])
             numbers_list.sort()
-            self.write_chunk_to_file(''.join(numbers_list), self.number_of_chunks)
+            self._write_chunk_to_file(''.join(numbers_list), self.number_of_chunks)
             self.number_of_chunks += 1
 
-    def write_chunk_to_file(self, data, chunk_number):
+    def _write_chunk_to_file(self, data, chunk_number):
         file_name = self.chunk_file_name_format.format(chunk_number)
         try:
             with open(file_name, 'w') as file:
@@ -58,42 +59,67 @@ class ChunkSorter:
         except Exception as e:
             print(type(e).__name__, e.args)
             sys.exit(1)
-        self.chunk_filenames_list.append(file_name)
-
-
-class ChunksMerger:
-    def __init__(self, chunk_filenames_list, number_of_chunks, buffer_size, output_file_name):
-        self.chunk_filenames_list = chunk_filenames_list
-        self.number_of_chunks = number_of_chunks
-        self.buffer_size = buffer_size
-        self.output_file_name = output_file_name
+        self.chunk_file_names_list.append(file_name)
 
     def merge(self):
-        open_chunk_files = self._get_list_of_open_files(self.chunk_filenames_list)
+        open_chunk_files = self._get_list_of_open_files(self.chunk_file_names_list)
         try:
             with open(self.output_file_name, 'w') as output_file:
-                while True:
-                    merge_buffer = []
-                    for chunk in open_chunk_files:
-                        for line in chunk.readlines(self.buffer_size):
-                            merge_buffer.append(line)
-                    if not merge_buffer:
-                        break
-                    merge_buffer.sort()
-                    for phone_number in merge_buffer:
-                        output_file.write("+79" + phone_number)
+                while self._identify_the_file_with_min_number():
+                    while True:
+                        pointer = self.file_with_min_number.tell()
+                        phone_number = self.file_with_min_number.readline()
+                        if not phone_number:
+                            break
+                        if self.prev_min_number is None:
+                            output_file.write("+79" + phone_number)
+                        elif phone_number <= self.min_number:
+                            output_file.write("+79" + phone_number)
+                        else:
+                            self.file_with_min_number.seek(pointer)
+                            break
         except Exception as e:
             print(type(e).__name__, e.args)
             sys.exit(1)
         finally:
             self._close_files(open_chunk_files)
 
-    @staticmethod
-    def _get_list_of_open_files(chunk_filenames_list):
-        files = []
+    def _get_list_of_open_files(self, chunk_filenames_list):
+        self.open_chunk_files = []
         for i in range(len(chunk_filenames_list)):
-            files.append(open(chunk_filenames_list[i]))
-        return files
+            self.open_chunk_files.append(open(chunk_filenames_list[i]))
+        return self.open_chunk_files
+
+    def _identify_the_file_with_min_number(self):
+        self.min_number = None
+        self.prev_min_number = None
+        self.file_with_min_number = None
+        self.first_numbers = []
+        for chunk_file in self.open_chunk_files:
+            pointer = chunk_file.tell()
+            number = chunk_file.readline()
+            if not number:
+                chunk_file.close()
+                self.open_chunk_files.remove(chunk_file)
+                continue
+            else:
+                self.first_numbers.append((number, chunk_file))
+                chunk_file.seek(pointer)
+        if not self.first_numbers:
+            return None  # all chunk files are empty
+        for number, chunk_file in self.first_numbers:
+            if self.min_number is None:
+                self.min_number = number
+                self.file_with_min_number = chunk_file
+            if number <= self.min_number:
+                self.prev_min_number = self.min_number
+                self.min_number = number
+                self.file_with_min_number = chunk_file
+        return self.file_with_min_number
+
+    def remove_chunk_files(self):
+        for chunk_file_name in self.chunk_file_names_list:
+            os.remove(chunk_file_name)
 
     @staticmethod
     def _close_files(list_of_open_files):
@@ -101,14 +127,29 @@ class ChunksMerger:
             file.close()
 
 
+def solution_verification(output_file_name):
+    previous_line = None
+    line_counter = 0
+    with open(output_file_name) as output_file:
+        while True:
+            line = output_file.readline()
+            if not line:
+                break
+            if previous_line is not None and line < previous_line:
+                print(f"mistake in the file {output_file_name} on line {line_counter + 1}")
+                break
+            previous_line = line
+            line_counter += 1
+
+
 def main():
     input_file_name = 'phone_numbers_list.txt'
     chunk_file_name_format = input_file_name + "_tmp_{0}"
     output_file_name = 'sorted_phone_numbers_list.txt'
-    chunk_size = 5 * 1024 * 1024  # megabyte
-    min_buffer_size = 1000
-    time_print = True
-    cleanup = True
+    chunk_size = 50 * 1024 * 1024  # megabyte
+    time_print = True  # set True to print execution time
+    remove_chunk_files = True  # set False to not remove chunk files
+    check_the_solution = True  # set True to check the solution
 
     if len(sys.argv) == 1:
         print(HELP)
@@ -128,6 +169,7 @@ def main():
         if len(sys.argv) == 4:
             input_file_name = sys.argv[3]
         start = time.time()
+        # creation
         create_file_with_numbers(input_file_name, n)
         end = time.time()
         if time_print:
@@ -137,16 +179,17 @@ def main():
         if len(sys.argv) == 4:
             input_file_name = sys.argv[3]
         start = time.time()
-        cs = ChunkSorter(input_file_name, chunk_file_name_format)
-        cs.split_file_to_chunks(chunk_size)
-        buffer_size = max(min_buffer_size, chunk_size // cs.number_of_chunks)
-        ChunksMerger(cs.chunk_filenames_list, cs.number_of_chunks, buffer_size, output_file_name).merge()
+        # sorting
+        pns = PhoneNumberSorter(input_file_name, output_file_name, chunk_file_name_format)
+        pns.split_file_to_chunks(chunk_size)
+        pns.merge()
         end = time.time()
         if time_print:
             print(f"sorting time: {end - start:.3f} s")
-        if cleanup:
-            for file in cs.chunk_filenames_list:
-                os.remove(file)
+        if remove_chunk_files:
+            pns.remove_chunk_files()
+        if check_the_solution:
+            solution_verification(output_file_name)
     return 0
 
 

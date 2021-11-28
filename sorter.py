@@ -149,7 +149,7 @@ def main():
     chunk_size = 50 * 1024 * 1024  # megabyte
     time_print = True  # set True to print execution time
     remove_chunk_files = True  # set False to not remove chunk files
-    check_the_solution = True  # set True to check the solution
+    check_the_solution = False  # set True to check the solution
 
     if len(sys.argv) == 1:
         print(HELP)
